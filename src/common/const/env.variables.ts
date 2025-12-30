@@ -11,4 +11,16 @@ export const ENV_VARIABLES = {
   refreshTokenSecret: 'REFRESH_TOKEN_SECRET',
   accessTokenExpiresIn: 'ACCESS_TOKEN_EXPIRES_IN',
   refreshTokenExpiresIn: 'REFRESH_TOKEN_EXPIRES_IN',
+
+  googleClientId: 'GOOGLE_CLIENT_ID',
+  googleClientSecret: 'GOOGLE_CLIENT_SECRET',
+  googleClientCallbackUrl: 'GOOGLE_CLIENT_CALLBACK_URL',
+
+  githubClientId: 'GITHUB_CLIENT_ID',
+  githubClientSecret: 'GITHUB_CLIENT_SECRET',
+  githubCallbackUrl: 'GITHUB_CALLBACK_URL',
+
+  kakaoClientId: 'KAKAO_CLIENT_ID',
+  kakaoClientSecret: 'KAKAO_CLIENT_SECRET',
+  kakaoCallbackUrl: 'KAKAO_CALLBACK_URL',
 };

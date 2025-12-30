@@ -4,11 +4,14 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../user/entities/user.entity';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '../role/enum/user-role';
 import { Role } from '../role/entities/role.entity';
 import { Response } from 'express';
+import { DataSource } from 'typeorm';
+import { Account } from '../account/entities/account.entity';
+import { SocialUser } from './types/auth';
 
 jest.mock('bcrypt');
 
@@ -17,6 +20,7 @@ describe('AuthService', () => {
   let configService: jest.Mocked<ConfigService>;
   let jwtService: jest.Mocked<JwtService>;
   let userRepository: any;
+  let dataSource: any;
 
   const mockConfigService = {
     get: jest.fn(),
@@ -27,23 +31,40 @@ describe('AuthService', () => {
   };
 
   const mockUserRepository = {
-    manager: {
-      transaction: jest.fn(),
-    },
     createQueryBuilder: jest.fn(),
+    findOne: jest.fn(),
+    save: jest.fn(),
+    existsBy: jest.fn(),
+  };
+
+  const mockAccountRepository = {
+    findOne: jest.fn(),
+    save: jest.fn(),
   };
 
   const mockEntityManager = {
     getRepository: jest.fn(),
+    save: jest.fn(),
+    findOne: jest.fn(),
+  };
+
+  const mockDataSource = {
+    transaction: jest.fn(),
   };
 
   const mockUserRepoInTransaction = {
     existsBy: jest.fn(),
+    findOne: jest.fn(),
     save: jest.fn(),
   };
 
   const mockRoleRepoInTransaction = {
     findOne: jest.fn(),
+  };
+
+  const mockAccountRepoInTransaction = {
+    findOne: jest.fn(),
+    save: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -53,6 +74,11 @@ describe('AuthService', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: getRepositoryToken(User), useValue: mockUserRepository },
+        { provide: DataSource, useValue: mockDataSource },
+        {
+          provide: getRepositoryToken(Account),
+          useValue: mockAccountRepository,
+        },
       ],
     }).compile();
 
@@ -60,8 +86,28 @@ describe('AuthService', () => {
     configService = module.get(ConfigService);
     jwtService = module.get(JwtService);
     userRepository = module.get(getRepositoryToken(User));
+    dataSource = module.get(DataSource);
 
     jest.clearAllMocks();
+
+    mockDataSource.transaction.mockImplementation(
+      (isolationLevel, callback) => {
+        if (typeof isolationLevel === 'function') {
+          return isolationLevel(mockEntityManager);
+        }
+        return callback(mockEntityManager);
+      },
+    );
+
+    mockEntityManager.getRepository.mockImplementation((entity) => {
+      if (entity === User) return mockUserRepoInTransaction;
+      if (entity === Role) return mockRoleRepoInTransaction;
+      if (entity === Account) return mockAccountRepoInTransaction;
+      return {
+        findOne: jest.fn(),
+        save: jest.fn(),
+      } as any;
+    });
   });
 
   it('should be defined', () => {
@@ -76,14 +122,6 @@ describe('AuthService', () => {
     };
 
     it('should successfully sign up a new user', async () => {
-      mockUserRepository.manager.transaction.mockImplementation((level, cb) =>
-        cb(mockEntityManager),
-      );
-      mockEntityManager.getRepository.mockImplementation((entity) => {
-        if (entity === User) return mockUserRepoInTransaction;
-        if (entity === Role) return mockRoleRepoInTransaction;
-      });
-
       mockUserRepoInTransaction.existsBy.mockResolvedValue(false);
       mockRoleRepoInTransaction.findOne.mockResolvedValue({
         id: 1,
@@ -106,12 +144,6 @@ describe('AuthService', () => {
     });
 
     it('should throw BadRequestException if user already exists', async () => {
-      mockUserRepository.manager.transaction.mockImplementation((level, cb) =>
-        cb(mockEntityManager),
-      );
-      mockEntityManager.getRepository.mockReturnValue(
-        mockUserRepoInTransaction,
-      );
       mockUserRepoInTransaction.existsBy.mockResolvedValue(true);
 
       await expect(service.signUp(signUpDto)).rejects.toThrow(
@@ -120,14 +152,6 @@ describe('AuthService', () => {
     });
 
     it('should throw BadRequestException if default role is missing', async () => {
-      mockUserRepository.manager.transaction.mockImplementation((level, cb) =>
-        cb(mockEntityManager),
-      );
-      mockEntityManager.getRepository.mockImplementation((entity) => {
-        if (entity === User) return mockUserRepoInTransaction;
-        if (entity === Role) return mockRoleRepoInTransaction;
-      });
-
       mockUserRepoInTransaction.existsBy.mockResolvedValue(false);
       mockRoleRepoInTransaction.findOne.mockResolvedValue(null);
 
@@ -144,6 +168,7 @@ describe('AuthService', () => {
       email: 'test@example.com',
       hashedPassword: 'hashedPassword',
       role: { name: UserRole.USER },
+      image: 'profile.jpg',
     };
     const mockRes = {
       cookie: jest.fn(),
@@ -216,7 +241,11 @@ describe('AuthService', () => {
 
   describe('issueAccessToken', () => {
     it('should issue an access token', async () => {
-      const mockUser = { id: 1, role: { name: UserRole.USER } } as any;
+      const mockUser = {
+        id: 1,
+        role: { name: UserRole.USER },
+        image: 'img',
+      } as any;
       const mockRes = {
         cookie: jest.fn(),
       } as unknown as Response;
@@ -231,6 +260,128 @@ describe('AuthService', () => {
         'accessToken',
         'access_token',
         expect.any(Object),
+      );
+    });
+  });
+
+  describe('handleSocialLogin', () => {
+    const socialUser: SocialUser = {
+      provider: 'google',
+      providerAccountId: '123456789',
+      name: 'Social User',
+      email: 'social@example.com',
+      image: 'social.jpg',
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    };
+
+    const mockRes = {
+      cookie: jest.fn(),
+    } as unknown as Response;
+
+    const mockExistingUser = {
+      id: 1,
+      email: 'social@example.com',
+      role: { name: UserRole.USER },
+      image: 'social.jpg',
+    };
+
+    const mockAccount = {
+      id: 1,
+      provider: 'google',
+      providerAccountId: '123456789',
+      user: mockExistingUser,
+    };
+
+    it('should login if account exists', async () => {
+      mockAccountRepoInTransaction.findOne.mockResolvedValue(mockAccount);
+      jwtService.signAsync.mockResolvedValue('token');
+      configService.get.mockReturnValue('secret');
+
+      await service.handleSocialLogin(socialUser, mockRes);
+
+      expect(mockAccountRepoInTransaction.findOne).toHaveBeenCalledWith({
+        where: {
+          provider: socialUser.provider,
+          providerAccountId: socialUser.providerAccountId,
+        },
+        relations: { user: { role: true } },
+      });
+
+      expect(mockUserRepoInTransaction.findOne).not.toHaveBeenCalled();
+
+      expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
+      expect(mockRes.cookie).toHaveBeenCalledTimes(2);
+    });
+
+    it('should link account and login if user exists but account does not', async () => {
+      mockAccountRepoInTransaction.findOne.mockResolvedValue(null);
+      mockUserRepoInTransaction.findOne.mockResolvedValue(mockExistingUser);
+
+      jwtService.signAsync.mockResolvedValue('token');
+      configService.get.mockReturnValue('secret');
+
+      await service.handleSocialLogin(socialUser, mockRes);
+
+      expect(mockUserRepoInTransaction.findOne).toHaveBeenCalledWith({
+        where: { email: socialUser.email },
+        relations: { role: true },
+      });
+
+      expect(mockAccountRepoInTransaction.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user: mockExistingUser,
+          provider: socialUser.provider,
+        }),
+      );
+
+      expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
+      expect(mockRes.cookie).toHaveBeenCalledTimes(2);
+    });
+
+    it('should create new user and account if neither exists', async () => {
+      mockAccountRepoInTransaction.findOne.mockResolvedValue(null);
+      mockUserRepoInTransaction.findOne.mockResolvedValue(null);
+      mockRoleRepoInTransaction.findOne.mockResolvedValue({
+        id: 1,
+        name: UserRole.USER,
+      });
+
+      const newUser = { ...mockExistingUser, id: 2 };
+      mockUserRepoInTransaction.save.mockResolvedValue(newUser);
+
+      jwtService.signAsync.mockResolvedValue('token');
+      configService.get.mockReturnValue('secret');
+
+      await service.handleSocialLogin(socialUser, mockRes);
+
+      expect(mockUserRepoInTransaction.save).toHaveBeenCalledWith({
+        email: socialUser.email,
+        name: socialUser.name,
+        image: socialUser.image,
+        role: expect.objectContaining({ name: UserRole.USER }),
+      });
+
+      expect(mockAccountRepoInTransaction.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user: newUser,
+          provider: socialUser.provider,
+        }),
+      );
+
+      expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
+      expect(mockRes.cookie).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw NotFoundException if default role is missing when creating new user', async () => {
+      mockAccountRepoInTransaction.findOne.mockResolvedValue(null);
+      mockUserRepoInTransaction.findOne.mockResolvedValue(null);
+      mockRoleRepoInTransaction.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.handleSocialLogin(socialUser, mockRes),
+      ).rejects.toThrow(
+        new NotFoundException('USER 권한이 존재하지 않습니다.'),
       );
     });
   });

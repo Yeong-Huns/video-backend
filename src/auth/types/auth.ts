@@ -6,6 +6,7 @@ export type TokenPayload = {
   id: string;
   role: Pick<Role, 'name'>;
   type: 'access' | 'refresh';
+  image: string | null;
   iat: number;
   exp: number;
 };
@@ -15,6 +16,16 @@ export interface RequestWithToken extends Request {
   user: TokenPayload;
 }
 
-export type UserWithRoleName = Pick<User, 'id'> & {
+export type UserWithRoleName = Pick<User, 'id' | 'image'> & {
   role: Pick<Role, 'name'>;
 };
+
+export interface SocialUser {
+  provider: string;
+  providerAccountId: string;
+  email: string;
+  name: string;
+  image?: string;
+  accessToken?: string;
+  refreshToken?: string;
+}

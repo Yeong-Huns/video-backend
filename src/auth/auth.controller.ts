@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -18,14 +19,20 @@ import {
 } from '@nestjs/swagger';
 import { UserResponseDto } from '../user/dto/response/user-response.dto';
 import { Refresh } from './decorator/refresh.decorator';
-import type { RequestWithToken } from './types/auth';
-import type { Response } from 'express';
+import type { RequestWithToken, SocialUser } from './types/auth';
+import type { Request, Response } from 'express';
 import { SignInDto } from './dto/request/sign-in.dto';
+import { GoogleAuth } from './decorator/google-auth.decorator';
+import { ConfigService } from '@nestjs/config';
+import { GithubAuth } from './decorator/github-auth.decorator';
 
 @ApiTags('인증/인가')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @ApiOperation({
     summary: '회원가입',
@@ -99,7 +106,64 @@ export class AuthController {
     @Req() req: RequestWithToken,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { id, role } = req.user;
-    await this.authService.issueAccessToken({ id, role }, res);
+    await this.authService.issueAccessToken(req.user, res);
+  }
+
+  @ApiOperation({
+    summary: '구글 로그인',
+    description: '구글 계정으로 로그인을 진행합니다.',
+  })
+  @Public()
+  @Get('google')
+  @GoogleAuth()
+  async googleLogin() {}
+
+  @ApiOperation({
+    summary: '구글 로그인 콜백',
+    description: '구글 로그인 성공 시 호출되는 콜백 엔드포인트입니다.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: '로그인 성공 후 프론트엔드 페이지로 리다이렉트',
+  })
+  @Public()
+  @Get('google/callback')
+  @GoogleAuth()
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
+    const socialUser = req.user as SocialUser;
+    await this.authService.handleSocialLogin(socialUser, res);
+
+    const redirectPage =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    return res.redirect(redirectPage);
+  }
+
+  @ApiOperation({
+    summary: '깃허브 로그인',
+    description: '깃허브 계정으로 로그인을 진행합니다.',
+  })
+  @Public()
+  @Get('github')
+  @GithubAuth()
+  async githubLogin() {}
+
+  @ApiOperation({
+    summary: '깃허브 로그인 콜백',
+    description: '깃허브 로그인 성공 시 호출되는 콜백 엔드포인트입니다.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: '로그인 성공 후 프론트엔드 페이지로 리다이렉트',
+  })
+  @Public()
+  @Get('github/callback')
+  @GithubAuth()
+  async githubCallback(@Req() req: Request, @Res() res: Response) {
+    const socialUser = req.user as SocialUser;
+    await this.authService.handleSocialLogin(socialUser, res);
+
+    const redirectPage =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    return res.redirect(redirectPage);
   }
 }

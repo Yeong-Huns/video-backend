@@ -31,8 +31,8 @@ async function bootstrap() {
 
   /* Swagger 설정 */
   const config = new DocumentBuilder()
-    .setTitle('타이틀 입력')
-    .setDescription('설명 입력')
+    .setTitle('nest template')
+    .setDescription('temp description')
     .setVersion('1.0')
     .addTag('태그 입력')
     /* 쿠키검증(엑세스토큰)*/

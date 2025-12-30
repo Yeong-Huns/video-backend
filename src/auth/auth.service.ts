@@ -1,9 +1,13 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../user/entities/user.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { SignUpDto } from './dto/request/sign-up.dto';
 import { compare, hash } from 'bcrypt';
 import { ENV_VARIABLES } from '../common/const/env.variables';
@@ -11,21 +15,25 @@ import { UserRole } from '../role/enum/user-role';
 import { Role } from '../role/entities/role.entity';
 import { UserResponseDto } from '../user/dto/response/user-response.dto';
 import { CookieOptions, Response } from 'express';
-import { UserWithRoleName } from './types/auth';
+import { SocialUser, UserWithRoleName } from './types/auth';
 import { SignInDto } from './dto/request/sign-in.dto';
+import { Account } from '../account/entities/account.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    private readonly dataSource: DataSource,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Account)
+    private readonly accountRepository: Repository<Account>,
   ) {}
 
   async signUp(signUpDto: SignUpDto) {
     const { email, password } = signUpDto;
-    return await this.userRepository.manager.transaction(
+    return await this.dataSource.transaction(
       'READ COMMITTED',
       async (manager) => {
         const isExist = await manager.getRepository(User).existsBy({ email });
@@ -106,9 +114,9 @@ export class AuthService {
     return user;
   }
 
-  async issueAccessToken({ id, role }: UserWithRoleName, res: Response) {
+  async issueAccessToken({ id, role, image }: UserWithRoleName, res: Response) {
     const token = await this.jwtService.signAsync(
-      { id, role: role.name, type: 'access' },
+      { id, role: role.name, type: 'access', image },
       {
         secret: this.configService.get<string>('ACCESS_TOKEN_SECRET')!,
         expiresIn: '15m',
@@ -123,11 +131,11 @@ export class AuthService {
   }
 
   private async issueRefreshToken(
-    { id, role }: UserWithRoleName,
+    { id, role, image }: UserWithRoleName,
     res: Response,
   ) {
     const token = await this.jwtService.signAsync(
-      { id, role: role.name, type: 'refresh' },
+      { id, role: role.name, type: 'refresh', image },
       {
         secret: this.configService.get<string>('REFRESH_TOKEN_SECRET')!,
         expiresIn: '7d',
@@ -138,6 +146,68 @@ export class AuthService {
       ...this.tokenOptions,
       path: '/auth/refresh-access',
       maxAge: 24 * 60 * 60 * 1000,
+    });
+  }
+
+  async handleSocialLogin(socialUser: SocialUser, res: Response) {
+    const {
+      provider,
+      providerAccountId,
+      name,
+      image,
+      email,
+      accessToken,
+      refreshToken,
+    } = socialUser;
+
+    return this.dataSource.transaction('READ COMMITTED', async (manager) => {
+      const existingAccount = await manager.getRepository(Account).findOne({
+        where: { provider, providerAccountId },
+        relations: { user: { role: true } },
+      });
+
+      if (existingAccount)
+        return await Promise.all([
+          this.issueAccessToken(existingAccount.user, res),
+          this.issueRefreshToken(existingAccount.user, res),
+        ]);
+
+      let user = await manager.getRepository(User).findOne({
+        where: { email },
+        relations: { role: true },
+      });
+
+      if (!user) {
+        const defaultRole = await manager.getRepository(Role).findOne({
+          where: { name: UserRole.USER },
+        });
+
+        if (!defaultRole)
+          throw new NotFoundException('USER 권한이 존재하지 않습니다.');
+
+        user = await manager.getRepository(User).save({
+          email,
+          name,
+          image,
+          role: defaultRole,
+        });
+      }
+
+      /* 소셜 계정 연결 */
+      await manager.getRepository(Account).save({
+        provider,
+        providerAccountId,
+        type: 'social',
+        accessToken,
+        refreshToken,
+        user,
+      });
+
+      /* 토큰 발급 */
+      return await Promise.all([
+        this.issueAccessToken(user, res),
+        this.issueRefreshToken(user, res),
+      ]);
     });
   }
 }
