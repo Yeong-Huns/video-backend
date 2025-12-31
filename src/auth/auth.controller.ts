@@ -25,6 +25,7 @@ import { SignInDto } from './dto/request/sign-in.dto';
 import { GoogleAuth } from './decorator/google-auth.decorator';
 import { ConfigService } from '@nestjs/config';
 import { GithubAuth } from './decorator/github-auth.decorator';
+import { KakaoAuth } from './decorator/kakao-auth.decorator';
 
 @ApiTags('인증/인가')
 @Controller('auth')
@@ -47,9 +48,9 @@ export class AuthController {
     status: 400,
     description: '입력 데이터 유효성 검사 실패 또는 이메일 중복',
   })
+  @HttpCode(HttpStatus.CREATED)
   @Public()
   @Post('sign-up')
-  @HttpCode(HttpStatus.CREATED)
   signUp(@Body() signUpDto: SignUpDto) {
     return this.authService.signUp(signUpDto);
   }
@@ -63,9 +64,9 @@ export class AuthController {
     description: '로그인 성공 (Access Token 및 Refresh Token 쿠키 설정)',
   })
   @ApiResponse({ status: 401, description: '인증 실패 (비밀번호 불일치 등)' })
+  @HttpCode(HttpStatus.OK)
   @Public()
   @Post('sign-in')
-  @HttpCode(HttpStatus.OK)
   async signIn(
     @Body() signInDto: SignInDto,
     @Res({ passthrough: true }) res: Response,
@@ -82,9 +83,9 @@ export class AuthController {
     status: 200,
     description: '로그아웃 성공',
   })
+  @HttpCode(HttpStatus.OK)
   @Public()
   @Post('sign-out')
-  @HttpCode(HttpStatus.OK)
   signOut(@Res({ passthrough: true }) res: Response) {
     this.authService.signOut(res);
   }
@@ -99,9 +100,9 @@ export class AuthController {
     status: 401,
     description: 'Refresh Token이 유효하지 않거나 만료됨',
   })
+  @HttpCode(HttpStatus.OK)
   @Refresh()
   @Post('refresh-access')
-  @HttpCode(HttpStatus.OK)
   async refreshAccessToken(
     @Req() req: RequestWithToken,
     @Res({ passthrough: true }) res: Response,
@@ -113,9 +114,8 @@ export class AuthController {
     summary: '구글 로그인',
     description: '구글 계정으로 로그인을 진행합니다.',
   })
-  @Public()
-  @Get('google')
   @GoogleAuth()
+  @Get('google')
   async googleLogin() {}
 
   @ApiOperation({
@@ -126,9 +126,8 @@ export class AuthController {
     status: 302,
     description: '로그인 성공 후 프론트엔드 페이지로 리다이렉트',
   })
-  @Public()
-  @Get('google/callback')
   @GoogleAuth()
+  @Get('google/callback')
   async googleCallback(@Req() req: Request, @Res() res: Response) {
     const socialUser = req.user as SocialUser;
     await this.authService.handleSocialLogin(socialUser, res);
@@ -142,9 +141,8 @@ export class AuthController {
     summary: '깃허브 로그인',
     description: '깃허브 계정으로 로그인을 진행합니다.',
   })
-  @Public()
-  @Get('github')
   @GithubAuth()
+  @Get('github')
   async githubLogin() {}
 
   @ApiOperation({
@@ -155,10 +153,36 @@ export class AuthController {
     status: 302,
     description: '로그인 성공 후 프론트엔드 페이지로 리다이렉트',
   })
-  @Public()
-  @Get('github/callback')
   @GithubAuth()
+  @Get('github/callback')
   async githubCallback(@Req() req: Request, @Res() res: Response) {
+    const socialUser = req.user as SocialUser;
+    await this.authService.handleSocialLogin(socialUser, res);
+
+    const redirectPage =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    return res.redirect(redirectPage);
+  }
+
+  @ApiOperation({
+    summary: '카카오 로그인',
+    description: '카카오 계정으로 로그인을 진행합니다.',
+  })
+  @KakaoAuth()
+  @Get('kakao')
+  async kakaoLogin() {}
+
+  @ApiOperation({
+    summary: '카카오 로그인 콜백',
+    description: '카카오 로그인 성공 시 호출되는 콜백 엔드포인트입니다.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: '로그인 성공 후 프론트엔드 페이지로 리다이렉트',
+  })
+  @KakaoAuth()
+  @Get('kakao/callback')
+  async kakaoCallback(@Req() req: Request, @Res() res: Response) {
     const socialUser = req.user as SocialUser;
     await this.authService.handleSocialLogin(socialUser, res);
 

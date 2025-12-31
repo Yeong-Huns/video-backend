@@ -10,9 +10,13 @@ import { GoogleStrategy } from './strategy/google.strategy';
 import { GithubStrategy } from './strategy/github.strategy';
 import { Account } from '../account/entities/account.entity';
 import { Role } from '../role/entities/role.entity';
+import { KakaoStrategy } from './strategy/kakao.strategy';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Account, Role]), JwtModule.register({})],
+  imports: [
+    TypeOrmModule.forFeature([User, Account, Role]),
+    JwtModule.register({}),
+  ],
   controllers: [AuthController],
   providers: [
     AuthService,
@@ -20,6 +24,7 @@ import { Role } from '../role/entities/role.entity';
     JwtRefreshStrategy,
     GoogleStrategy,
     GithubStrategy,
+    KakaoStrategy,
   ],
 })
 export class AuthModule {}
