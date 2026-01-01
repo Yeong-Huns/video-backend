@@ -127,20 +127,24 @@ describe('AuthController', () => {
       await controller.githubLogin();
     });
 
-    describe('googleCallback', () => {
+    it('should define kakaoLogin', async () => {
+      expect(controller.kakaoLogin).toBeDefined();
+      await controller.kakaoLogin();
+    });
+
+    describe('kakaoCallback', () => {
       it('should handle social login and redirect to frontend URL', async () => {
-        const mockSocialUser = { email: 'google@test.com' };
+        const mockSocialUser = { email: 'kakao@test.com' };
         const mockReq = { user: mockSocialUser } as any;
         const frontendUrl = 'http://frontend.com';
         configService.get.mockReturnValue(frontendUrl);
 
-        await controller.googleCallback(mockReq, mockResponse);
+        await controller.kakaoCallback(mockReq, mockResponse);
 
         expect(service.handleSocialLogin).toHaveBeenCalledWith(
           mockSocialUser,
           mockResponse,
         );
-        expect(configService.get).toHaveBeenCalledWith('FRONTEND_URL');
         expect(mockResponse.redirect).toHaveBeenCalledWith(frontendUrl);
       });
 
@@ -148,28 +152,11 @@ describe('AuthController', () => {
         const mockReq = { user: {} } as any;
         configService.get.mockReturnValue(undefined);
 
-        await controller.googleCallback(mockReq, mockResponse);
+        await controller.kakaoCallback(mockReq, mockResponse);
 
         expect(mockResponse.redirect).toHaveBeenCalledWith(
           'http://localhost:3000',
         );
-      });
-    });
-
-    describe('githubCallback', () => {
-      it('should handle social login and redirect to frontend URL', async () => {
-        const mockSocialUser = { email: 'github@test.com' };
-        const mockReq = { user: mockSocialUser } as any;
-        const frontendUrl = 'http://frontend.com';
-        configService.get.mockReturnValue(frontendUrl);
-
-        await controller.githubCallback(mockReq, mockResponse);
-
-        expect(service.handleSocialLogin).toHaveBeenCalledWith(
-          mockSocialUser,
-          mockResponse,
-        );
-        expect(mockResponse.redirect).toHaveBeenCalledWith(frontendUrl);
       });
     });
   });

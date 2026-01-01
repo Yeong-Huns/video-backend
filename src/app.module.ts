@@ -11,6 +11,15 @@ import { VerificationTokenModule } from './verification-token/verification-token
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guard/access-token.guard';
 import { RoleGuard } from './auth/guard/role.guard';
+import { CourseModule } from './course/course.module';
+import { SectionModule } from './section/section.module';
+import { LectureModule } from './lecture/lecture.module';
+import { CourseCategoryModule } from './course-category/course-category.module';
+import { CourseEnrollmentModule } from './course-enrollment/course-enrollment.module';
+import { CourseReviewModule } from './course-review/course-review.module';
+import { CourseQuestionModule } from './course-question/course-question.module';
+import { CourseCommentModule } from './course-comment/course-comment.module';
+import { LectureActivityModule } from './lecture-activity/lecture-activity.module';
 
 @Module({
   imports: [
@@ -51,6 +60,15 @@ import { RoleGuard } from './auth/guard/role.guard';
     UserModule,
     AccountModule,
     VerificationTokenModule,
+    CourseModule,
+    SectionModule,
+    LectureModule,
+    CourseCategoryModule,
+    CourseEnrollmentModule,
+    CourseReviewModule,
+    CourseQuestionModule,
+    CourseCommentModule,
+    LectureActivityModule,
   ],
   providers: [
     {

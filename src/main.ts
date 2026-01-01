@@ -20,7 +20,7 @@ async function bootstrap() {
       /* 정의되지 않은 프로퍼티 받지 않음 */
       whitelist: true,
       /* 정의되지 않은 프로퍼티로 요청보내면 오류던짐 */
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
       /* 타입스크립트 타입을 보고 해당 타입으로 자동 변환 */
       transformOptions: { enableImplicitConversion: true },
       transform: true,

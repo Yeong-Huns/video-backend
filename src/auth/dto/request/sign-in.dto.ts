@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, Matches, MinLength } from 'class-validator';
+import { IsEmail, IsString } from 'class-validator';
 
 export class SignInDto {
   @ApiProperty({ description: '이메일', example: 'test@naver.com' })
@@ -8,10 +8,5 @@ export class SignInDto {
 
   @ApiProperty({ description: '비밀번호', example: 'qwer1234' })
   @IsString()
-  @MinLength(8, { message: '비밀번호는 최소 8자 이상이어야 합니다.' })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/, {
-    message:
-      '비밀번호는 영문 소문자, 대문자, 숫자, 특수문자를 각각 최소 1개 이상 포함해야 합니다.',
-  })
   password: string;
 }
