@@ -11,7 +11,9 @@ describe('LectureActivityController', () => {
       providers: [LectureActivityService],
     }).compile();
 
-    controller = module.get<LectureActivityController>(LectureActivityController);
+    controller = module.get<LectureActivityController>(
+      LectureActivityController,
+    );
   });
 
   it('should be defined', () => {

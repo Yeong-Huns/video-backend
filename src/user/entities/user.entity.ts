@@ -9,6 +9,12 @@ import {
 import { Role } from '../../role/entities/role.entity';
 import { Account } from '../../account/entities/account.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { Course } from '../../course/entities/course.entity';
+import { CourseEnrollment } from '../../course-enrollment/entities/course-enrollment.entity';
+import { CourseReview } from '../../course-review/entities/course-review.entity';
+import { CourseQuestion } from '../../course-question/entities/course-question.entity';
+import { CourseComment } from '../../course-comment/entities/course-comment.entity';
+import { LectureActivity } from '../../lecture-activity/entities/lecture-activity.entity';
 
 @Entity({ name: 'user' })
 export class User {
@@ -76,4 +82,40 @@ export class User {
   @ApiProperty({ type: () => [Account], description: '연결된 계정 목록' })
   @OneToMany(() => Account, (account) => account.user)
   accounts: Account[];
+
+  @ApiProperty({ type: () => [Course], description: '개설한 강의 목록' })
+  @OneToMany(() => Course, (course) => course.instructor)
+  courses: Course[];
+
+  @ApiProperty({
+    type: () => [CourseEnrollment],
+    description: '수강 신청 목록',
+  })
+  @OneToMany(
+    () => CourseEnrollment,
+    (courseEnrollment) => courseEnrollment.user,
+  )
+  courseEnrollments: CourseEnrollment[];
+
+  @ApiProperty({
+    type: () => [CourseReview],
+    description: '작성한 강의 리뷰 목록',
+  })
+  @OneToMany(() => CourseReview, (courseReview) => courseReview.user)
+  courseReviews: CourseReview[];
+
+  @ApiProperty({
+    type: () => [CourseQuestion],
+    description: '작성한 강의 질문 목록',
+  })
+  @OneToMany(() => CourseQuestion, (CourseQuestion) => CourseQuestion.user)
+  courseQuestions: CourseQuestion[];
+
+  @ApiProperty({ type: () => [CourseComment], description: '작성한 댓글 목록' })
+  @OneToMany(() => CourseComment, (courseComment) => courseComment.user)
+  courseComments: CourseComment[];
+
+  @ApiProperty({ type: () => [LectureActivity], description: '강의 활동 로그' })
+  @OneToMany(() => LectureActivity, (lectureActivity) => lectureActivity.user)
+  lectureActivities: LectureActivity[];
 }

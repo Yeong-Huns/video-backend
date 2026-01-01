@@ -21,12 +21,15 @@ export class Account {
   @Column({ type: 'varchar' })
   type: string;
 
-  @ApiProperty({ description: '제공자 (Provider)', example: 'google' })
-  @Column({ type: 'varchar' })
+  @ApiProperty({
+    description: '제공자 (Provider)',
+    example: 'google',
+  })
+  @Column({ type: 'varchar', unique: true })
   provider: string;
 
   @ApiProperty({ description: '제공자측 계정 ID', example: '1234567890' })
-  @Column({ name: 'provider_account_id', type: 'varchar' })
+  @Column({ name: 'provider_account_id', type: 'varchar', unique: true })
   providerAccountId: string;
 
   @ApiProperty({
@@ -77,6 +80,7 @@ export class Account {
   @Column({ name: 'user_id', type: 'uuid' })
   userId: string;
 
+  @ApiProperty({ type: () => User, description: '사용자 정보' })
   @ManyToOne(() => User, (user) => user.accounts, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;

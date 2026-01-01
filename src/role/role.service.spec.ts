@@ -39,7 +39,7 @@ describe('RoleService', () => {
     it('should successfully create a role', async () => {
       const createRoleDto = { name: UserRole.USER };
       const savedRole = { id: 1, ...createRoleDto };
-      
+
       mockRoleRepository.save.mockResolvedValue(savedRole);
 
       const result = await service.createRole(createRoleDto);

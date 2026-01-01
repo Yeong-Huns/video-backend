@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, Profile } from 'passport-github2';
+import { Profile, Strategy } from 'passport-github2';
 import { ConfigService } from '@nestjs/config';
 import { ENV_VARIABLES } from '../../common/const/env.variables';
 import { SocialUser } from '../types/auth';
