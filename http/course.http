@@ -1,0 +1,39 @@
+### findAll(Search Options = QueryString)
+GET {{API_URL}}/{{COURSE}}?categoryId=cc41c3dc-dca1-4cf4-ab91-684e4ff2ce5a
+Content-Type: application/json
+
+### findOne
+GET {{API_URL}}/{{COURSE}}/d635de01-3064-4674-9059-b47763e63545?
+    include=sections,lectures,courseCategories,courseEnrollments,courseQuestions,courseReviews
+Content-Type: application/json
+
+
+### Create
+@개발=cc41c3dc-dca1-4cf4-ab91-684e4ff2ce5a
+@자기계발=057e6de8-f2f8-4097-be41-2abc7149d459
+POST {{API_URL}}/{{COURSE}}
+Content-Type: application/json
+
+{
+  "title": "Real MySQL 완전정복",
+  "slug": "Real MySQL",
+  "price": 70000,
+  "categoryIds": ["{{개발}}","{{자기계발}}"]
+}
+
+### Update
+@id=b5129f48-538d-43d5-821a-cabdb71f93d2
+PATCH {{API_URL}}/{{COURSE}}/{{id}}
+Content-Type: application/json
+
+{
+  "price": 68000,
+  "categoryIds": [
+    "{{개발}}",
+    "{{자기계발}}"
+  ]
+}
+
+### Delete
+DELETE {{API_URL}}/{{COURSE}}/{{id}}
+Content-Type: application/json

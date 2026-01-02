@@ -8,9 +8,9 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import BaseEntity from '../../common/entities/base.entity';
-import { Course } from 'src/course/entities/course.entity';
 import { Section } from '../../section/entities/section.entity';
 import { LectureActivity } from '../../lecture-activity/entities/lecture-activity.entity';
+import { Course } from '../../course/entities/course.entity';
 
 @Entity()
 export class Lecture extends BaseEntity {

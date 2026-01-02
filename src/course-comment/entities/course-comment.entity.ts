@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import BaseEntity from '../../common/entities/base.entity';
-import { User } from 'src/user/entities/user.entity';
+import { User } from '../../user/entities/user.entity';
 import { CourseQuestion } from '../../course-question/entities/course-question.entity';
 
 @Entity('course_comment')

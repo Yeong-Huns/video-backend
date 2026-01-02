@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { formatDate } from '../../common/utils/format-date.util';
+import { formatDate } from '../../utils/format-date.util';
 
 interface ExceptionResponse {
   message: string | string[];

@@ -144,7 +144,7 @@ export class AuthService {
 
     res.cookie('refreshToken', token, {
       ...this.tokenOptions,
-      path: '/auth/refresh-access',
+      path: '/',
       maxAge: 24 * 60 * 60 * 1000,
     });
   }
