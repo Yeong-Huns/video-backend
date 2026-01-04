@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Course } from './entities/course.entity';
 import { DataSource, Repository } from 'typeorm';
 import { CourseCategory } from '../course-category/entities/course-category.entity';
+import slug from 'slug';
 
 @Injectable()
 export class CourseService {
@@ -27,6 +28,8 @@ export class CourseService {
       return await manager.getRepository(Course).save({
         ...otherData,
         instructorId: userId,
+        slug: slug(createCourseDto.title),
+        status: 'DRAFT',
         courseCategories: categoryIds.map((id) => ({ id })),
       });
     });

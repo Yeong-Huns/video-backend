@@ -13,10 +13,18 @@ import {
 import { CourseService } from './course.service';
 import { UpdateCourseDto } from './dto/request/update-course.dto';
 import { FindCourseDto } from './dto/request/find-course.dto';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CreateCourseDto } from './dto/request/create-course.dto';
 import { type RequestWithToken } from '../auth/types/auth';
 import { FindUniqueCourseDto } from './dto/request/find-unique-course.dto';
+import { Course } from './entities/course.entity';
+import { Public } from '../auth/decorator/public.decorator';
 
 @ApiTags('강의 코스')
 @Controller('course')
@@ -25,6 +33,10 @@ export class CourseController {
 
   @ApiOperation({ summary: 'Course 생성' })
   @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: '생성된 코스 정보',
+    type: Course,
+  })
   @Post()
   create(
     @Req() req: RequestWithToken,
@@ -34,12 +46,15 @@ export class CourseController {
   }
 
   @ApiOperation({ summary: 'Course 목록 조회' })
+  @ApiOkResponse({ type: Course, isArray: true })
+  @Public()
   @Get()
   findAll(@Query() queryString: FindCourseDto) {
     return this.courseService.findAll(queryString);
   }
 
-  @ApiOperation({ summary: 'Course 상세 조회' })
+  @ApiOperation({ summary: 'Course 상세 조회(단건)' })
+  @ApiOkResponse({ type: Course })
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -49,6 +64,7 @@ export class CourseController {
   }
 
   @ApiOperation({ summary: 'Course 수정' })
+  @ApiOkResponse({ description: '수정된 코스 정보', type: Course })
   @ApiBearerAuth('access-token')
   @Patch(':id')
   update(
@@ -60,6 +76,7 @@ export class CourseController {
   }
 
   @ApiOperation({ summary: 'Course 삭제' })
+  @ApiOkResponse({ description: '삭제된 코스 정보', type: Course })
   @ApiBearerAuth('access-token')
   @Delete(':id')
   delete(@Req() req: RequestWithToken, @Param('id', ParseUUIDPipe) id: string) {
