@@ -94,11 +94,11 @@ export class SectionService {
       if (section.course.instructorId !== userId)
         throw new UnauthorizedException('이 섹션을 수정할 권한이 없습니다.');
 
-      const updatedSection = manager
-        .getRepository(Section)
-        .merge(section, updateSectionDto);
+      await manager.getRepository(Section).update(sectionId, updateSectionDto);
 
-      return await manager.getRepository(Section).save(updatedSection);
+      return manager
+        .getRepository(Section)
+        .findOne({ where: { id: sectionId } });
     });
   }
 

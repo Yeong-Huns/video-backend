@@ -22,6 +22,7 @@ describe('SectionService', () => {
     findOneBy: jest.fn(),
     findOne: jest.fn(),
     save: jest.fn(),
+    update: jest.fn(),
     merge: jest.fn(),
     remove: jest.fn(),
   };
@@ -201,9 +202,11 @@ describe('SectionService', () => {
       const updatedSection = { ...section, ...updateSectionDto };
 
       const mockSectionRepo = {
-        findOne: jest.fn().mockResolvedValue(section),
-        merge: jest.fn().mockReturnValue(updatedSection),
-        save: jest.fn().mockResolvedValue(updatedSection),
+        findOne: jest
+          .fn()
+          .mockResolvedValueOnce(section)
+          .mockResolvedValueOnce(updatedSection),
+        update: jest.fn().mockResolvedValue(undefined),
       };
 
       mockEntityManager.getRepository.mockReturnValue(mockSectionRepo);
@@ -211,11 +214,11 @@ describe('SectionService', () => {
       const result = await service.update(sectionId, updateSectionDto, userId);
 
       expect(mockDataSource.transaction).toHaveBeenCalled();
-      expect(mockSectionRepo.merge).toHaveBeenCalledWith(
-        section,
+      expect(mockSectionRepo.update).toHaveBeenCalledWith(
+        sectionId,
         updateSectionDto,
       );
-      expect(mockSectionRepo.save).toHaveBeenCalledWith(updatedSection);
+      expect(mockSectionRepo.findOne).toHaveBeenCalledTimes(2);
       expect(result).toEqual(updatedSection);
     });
 
