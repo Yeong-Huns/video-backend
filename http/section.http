@@ -1,0 +1,27 @@
+### Create Section
+@courseId = d5477a88-1c3d-4e8f-a641-ba91c529a797
+POST {{API_URL}}/{{SECTION}}/courses/{{courseId}}/sections
+Content-Type: application/json
+
+{
+  "title": "강의 시작"
+}
+
+### Find One Section
+@sectionId = cd5f5973-5fe8-48ad-aeca-a7b63aba366e
+GET {{API_URL}}/{{SECTION}}/sections/{{sectionId}}
+Content-Type: application/json
+
+### Update Section
+PATCH {{API_URL}}/{{SECTION}}/{{sectionId}}
+Content-Type: application/json
+
+{
+  "title": "섹션 제목 수정",
+  "description": "섹션 설명 추가",
+  "order": 1
+}
+
+### Delete Section
+DELETE {{API_URL}}/{{SECTION}}/{{sectionId}}
+Content-Type: application/json

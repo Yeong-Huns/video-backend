@@ -1,0 +1,3 @@
+### Find All Categories
+GET {{API_URL}}/{{COURSE_CATEGORY}}
+Content-Type: application/json

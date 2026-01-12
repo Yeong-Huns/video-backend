@@ -1,26 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { CreateCourseCategoryDto } from './dto/create-course-category.dto';
-import { UpdateCourseCategoryDto } from './dto/update-course-category.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { CourseCategory } from './entities/course-category.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class CourseCategoryService {
-  create(createCourseCategoryDto: CreateCourseCategoryDto) {
-    return 'This action adds a new courseCategory';
-  }
+  constructor(
+    @InjectRepository(CourseCategory)
+    private readonly courseCategoryRepository: Repository<CourseCategory>,
+  ) {}
 
-  findAll() {
-    return `This action returns all courseCategory`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} courseCategory`;
-  }
-
-  update(id: number, updateCourseCategoryDto: UpdateCourseCategoryDto) {
-    return `This action updates a #${id} courseCategory`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} courseCategory`;
+  async findAll() {
+    return await this.courseCategoryRepository.find({
+      order: { createdAt: 'asc' },
+    });
   }
 }

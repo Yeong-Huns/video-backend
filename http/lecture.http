@@ -1,0 +1,29 @@
+### Create Lecture
+@sectionId = 4030435f-1e4f-432e-9791-e9cc10f4cc0b
+POST {{API_URL}}/{{LECTURE}}/sections/{{sectionId}}/lectures
+Content-Type: application/json
+
+{
+  "title": "강의 소개"
+}
+
+### Find One Lecture
+@lectureId = 4b31acf5-8f8e-4d79-a744-89e013a38b78
+GET {{API_URL}}/{{LECTURE}}/{{lectureId}}
+Content-Type: application/json
+
+### Update Lecture
+PATCH {{API_URL}}/{{LECTURE}}/{{lectureId}}
+Content-Type: application/json
+
+{
+  "title": "강의 제목 수정",
+  "description": "강의 설명 수정",
+  "order": 1,
+  "duration": 600,
+  "isPreview": true
+}
+
+### Delete Lecture
+DELETE {{API_URL}}/{{LECTURE}}/{{lectureId}}
+Content-Type: application/json
