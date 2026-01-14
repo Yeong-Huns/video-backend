@@ -20,6 +20,8 @@ import { CourseReviewModule } from './course-review/course-review.module';
 import { CourseQuestionModule } from './course-question/course-question.module';
 import { CourseCommentModule } from './course-comment/course-comment.module';
 import { LectureActivityModule } from './lecture-activity/lecture-activity.module';
+import { MediaModule } from './media/media.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -69,6 +71,8 @@ import { LectureActivityModule } from './lecture-activity/lecture-activity.modul
     CourseQuestionModule,
     CourseCommentModule,
     LectureActivityModule,
+    MediaModule,
+    StorageModule,
   ],
   providers: [
     {

@@ -23,4 +23,13 @@ export const ENV_VARIABLES = {
   kakaoClientId: 'KAKAO_CLIENT_ID',
   kakaoClientSecret: 'KAKAO_CLIENT_SECRET',
   kakaoCallbackUrl: 'KAKAO_CALLBACK_URL',
+
+  r2Endpoint: 'R2_ENDPOINT',
+  r2AccessKeyId: 'R2_ACCESS_KEY_ID',
+  r2SecretAccessKey: 'R2_SECRET_ACCESS_KEY',
+  r2BucketName: 'R2_BUCKET_NAME',
+
+  r2PublicDomain: 'R2_PUBLIC_DOMAIN',
 };
+
+export const R2_CLIENT = 'R2_CLIENT';
