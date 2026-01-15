@@ -1,26 +1,38 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from './entities/user.entity';
+import { Repository } from 'typeorm';
+import { UserResponseDto } from './dto/response/user-response.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
+
+  async getProfile(userId: string) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: { role: true },
+    });
+
+    if (!user) throw new NotFoundException('프로필 정보를 조회할 수 없습니다.');
+
+    return UserResponseDto.from(user);
   }
 
-  findAll() {
-    return `This action returns all user`;
-  }
+  async updateProfile(updateUserDto: UpdateUserDto, userId: string) {
+    const user = await this.userRepository.preload({
+      id: userId,
+      ...updateUserDto,
+    });
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
+    if (!user) throw new NotFoundException('프로필 정보를 조회할 수 없습니다.');
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
+    const updatedUser = await this.userRepository.save(user);
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+    return UserResponseDto.from(updatedUser);
   }
 }

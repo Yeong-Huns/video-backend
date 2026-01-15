@@ -1,42 +1,32 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Get, Patch, Req } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
+import { User } from './entities/user.entity';
+import { type RequestWithToken } from '../auth/types/auth';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
-  }
+  @ApiOperation({ summary: '프로필 조회' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: '프로필 조회 성공',
+    type: User,
+  })
+  @Get('profile')
+  getProfile(@Req() req: RequestWithToken) {}
 
-  @Get()
-  findAll() {
-    return this.userService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(+id, updateUserDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
-  }
+  @ApiOperation({ summary: '프로필 수정' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: '프로필 업데이트 성공',
+    type: User,
+  })
+  @Patch('profile')
+  updateProfile(
+    @Body() updateUserDto: UpdateUserDto,
+    @Req() req: RequestWithToken,
+  ) {}
 }
