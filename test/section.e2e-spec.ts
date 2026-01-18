@@ -74,7 +74,7 @@ describe('SectionController (e2e)', () => {
 
     const payload = {
       id: testUser.id,
-      role: { name: role.name },
+      role: { name: role?.name },
       type: 'access',
     };
     accessToken = jwtService.sign(payload);

@@ -25,6 +25,8 @@ import { type RequestWithToken } from '../auth/types/auth';
 import { FindUniqueCourseDto } from './dto/request/find-unique-course.dto';
 import { Course } from './entities/course.entity';
 import { Public } from '../auth/decorator/public.decorator';
+import { SearchCourseResponseDto } from './dto/response/search-response.dto';
+import { SearchCourseDto } from './dto/request/search-course.dto';
 
 @ApiTags('강의 코스')
 @Controller('course')
@@ -81,5 +83,15 @@ export class CourseController {
   @Delete(':id')
   delete(@Req() req: RequestWithToken, @Param('id', ParseUUIDPipe) id: string) {
     return this.courseService.delete(id, req.user.id);
+  }
+
+  @ApiOkResponse({
+    description: '코스 검색',
+    type: SearchCourseResponseDto,
+  })
+  @Public()
+  @Post('search')
+  search(@Body() searchCourseDto: SearchCourseDto) {
+    return this.courseService.searchCourses(searchCourseDto);
   }
 }

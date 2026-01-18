@@ -8,9 +8,14 @@ import { UpdateCourseDto } from './dto/request/update-course.dto';
 import { FindCourseDto } from './dto/request/find-course.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Course } from './entities/course.entity';
-import { DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 import { CourseCategory } from '../course-category/entities/course-category.entity';
 import slug from 'slug';
+import { SearchCourseDto } from './dto/request/search-course.dto';
+import {
+  CourseResponseDto,
+  SearchCourseResponseDto,
+} from './dto/response/search-response.dto';
 
 @Injectable()
 export class CourseService {
@@ -104,5 +109,105 @@ export class CourseService {
 
       return course;
     });
+  }
+
+  async searchCourses(
+    searchCourseDto: SearchCourseDto,
+  ): Promise<SearchCourseResponseDto> {
+    const {
+      q,
+      page = 1,
+      pageSize = 20,
+      order,
+      sortBy,
+      priceRange,
+      category,
+    } = searchCourseDto;
+
+    const queryBuilder = this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndSelect('course.instructor', 'instructor')
+      .leftJoinAndSelect('course.courseCategories', 'courseCategories')
+      .loadRelationCountAndMap(
+        'course.enrollmentCount',
+        'course.courseEnrollments',
+      )
+      .loadRelationCountAndMap('course.reviewCount', 'course.courseReviews');
+
+    if (q) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where('course.title LIKE :searchTerm', {
+            searchTerm: `%${q}%`,
+          }).orWhere('instructor.name LIKE :searchTerm', {
+            searchTerm: `%${q}%`,
+          });
+        }),
+      );
+    }
+
+    if (category) {
+      queryBuilder.andWhere('courseCategories.id = :categoryId', {
+        categoryId: category,
+      });
+    }
+
+    if (priceRange) {
+      const minPrice = priceRange.min ?? 0;
+      const maxPrice = priceRange.max ?? Number.MAX_SAFE_INTEGER;
+
+      queryBuilder.andWhere('course.price BETWEEN :min AND :max', {
+        min: minPrice,
+        max: maxPrice,
+      });
+    }
+
+    if (sortBy === 'price') {
+      queryBuilder.orderBy(
+        'course.price',
+        order?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
+      );
+    }
+
+    const skip = (page - 1) * pageSize;
+    queryBuilder.skip(skip).take(pageSize);
+
+    type CourseWithCounts = Course & {
+      enrollmentCount: number;
+      reviewCount: number;
+    };
+
+    const [courses, totalItems] = await queryBuilder.getManyAndCount();
+
+    const coursesWithCounts = courses as CourseWithCounts[];
+
+    const mappedCourses: CourseResponseDto[] = coursesWithCounts.map(
+      (course) => {
+        const { enrollmentCount, reviewCount, ...courseData } = course;
+        return {
+          ...courseData,
+          enrollmentCount: enrollmentCount ?? 0,
+          reviewCount: reviewCount ?? 0,
+        };
+      },
+    );
+
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    return {
+      success: true,
+      data: {
+        courses: mappedCourses,
+        pagination: {
+          currentPage: page,
+          totalPage: totalPages,
+          totalItems,
+          hasNext,
+          hasPrev,
+        },
+      },
+    };
   }
 }

@@ -8,6 +8,10 @@ import { CreateCourseDto } from './dto/request/create-course.dto';
 import { UpdateCourseDto } from './dto/request/update-course.dto';
 import { FindCourseDto } from './dto/request/find-course.dto';
 
+jest.mock('slug', () => {
+  return jest.fn((title) => `slug-${title}`);
+});
+
 describe('CourseService', () => {
   let service: CourseService;
   let dataSource: DataSource;
@@ -88,8 +92,10 @@ describe('CourseService', () => {
       expect(mockDataSource.transaction).toHaveBeenCalled();
       expect(mockEntityManager.getRepository).toHaveBeenCalledWith(Course);
       expect(mockRepoInTransaction.save).toHaveBeenCalledWith({
-        ...createCourseDto,
-        categoryIds: undefined,
+        title: createCourseDto.title,
+        price: createCourseDto.price,
+        slug: 'slug-Test Course',
+        status: 'DRAFT',
         instructorId: userId,
         courseCategories: [{ id: 'cat-1' }, { id: 'cat-2' }],
       });
@@ -112,7 +118,10 @@ describe('CourseService', () => {
       const result = await service.create(userId, dtoWithoutCategories);
 
       expect(mockRepoInTransaction.save).toHaveBeenCalledWith({
-        ...dtoWithoutCategories,
+        title: dtoWithoutCategories.title,
+        price: dtoWithoutCategories.price,
+        slug: 'slug-Test Course',
+        status: 'DRAFT',
         instructorId: userId,
         courseCategories: [],
       });
@@ -313,6 +322,121 @@ describe('CourseService', () => {
       await expect(service.delete(courseId, userId)).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+  });
+
+  describe('searchCourses', () => {
+    const searchCourseDto = {
+      page: 1,
+      pageSize: 10,
+      q: 'test',
+      category: 'cat-1',
+      priceRange: { min: 1000, max: 20000 },
+      sortBy: 'price',
+      order: 'ASC',
+    };
+
+    const mockQueryBuilder = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      loadRelationCountAndMap: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn(),
+    };
+
+    beforeEach(() => {
+      mockCourseRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+    });
+
+    it('should search courses with all filters', async () => {
+      const expectedCourses = [
+        {
+          id: 'course-1',
+          title: 'test course',
+          enrollmentCount: 5,
+          reviewCount: 3,
+        },
+      ];
+      const totalItems = 1;
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        expectedCourses,
+        totalItems,
+      ]);
+
+      const result = await service.searchCourses(searchCourseDto as any);
+
+      expect(mockCourseRepository.createQueryBuilder).toHaveBeenCalledWith(
+        'course',
+      );
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+        'course.instructor',
+        'instructor',
+      );
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+        'course.courseCategories',
+        'courseCategories',
+      );
+      expect(mockQueryBuilder.loadRelationCountAndMap).toHaveBeenCalledWith(
+        'course.enrollmentCount',
+        'course.courseEnrollments',
+      );
+      expect(mockQueryBuilder.loadRelationCountAndMap).toHaveBeenCalledWith(
+        'course.reviewCount',
+        'course.courseReviews',
+      );
+      // Check for search term (q)
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        expect.any(Object), // Brackets object
+      );
+      // Check for category
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'courseCategories.id = :categoryId',
+        { categoryId: 'cat-1' },
+      );
+      // Check for price range
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'course.price BETWEEN :min AND :max',
+        { min: 1000, max: 20000 },
+      );
+      // Check for sorting
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'course.price',
+        'ASC',
+      );
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
+
+      expect(result).toEqual({
+        success: true,
+        data: {
+          courses: expectedCourses,
+          pagination: {
+            currentPage: 1,
+            totalPage: 1,
+            totalItems: 1,
+            hasNext: false,
+            hasPrev: false,
+          },
+        },
+      });
+    });
+
+    it('should search courses with default parameters', async () => {
+      const expectedCourses = [];
+      const totalItems = 0;
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([
+        expectedCourses,
+        totalItems,
+      ]);
+
+      const result = await service.searchCourses({});
+
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(20); // Default pageSize
+      expect(result.data.courses).toEqual([]);
+      expect(result.data.pagination.totalItems).toEqual(0);
     });
   });
 });

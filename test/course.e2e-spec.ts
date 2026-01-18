@@ -1,5 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+// Mocks must be defined before imports that use them if we rely on hoisting but let's just use jest.mock
+jest.mock('uuid', () => ({
+  v4: jest.fn(() => `uuid-${Date.now()}-${Math.floor(Math.random() * 1000)}`),
+}));
+jest.mock('slug', () => {
+  return jest.fn((title) => `slug-${title}`);
+});
+
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { CreateCourseDto } from '../src/course/dto/request/create-course.dto';
@@ -169,5 +177,60 @@ describe('CourseController (e2e)', () => {
       .delete(`/course/${createdCourseId}`)
       .set('Cookie', [`accessToken=${accessToken}`])
       .expect(200);
+  });
+
+  it('/course/search (POST)', async () => {
+    const createDto: CreateCourseDto = {
+      title: 'Searchable Course',
+      slug: 'searchable-course-' + Date.now(),
+      price: 15000,
+      shortDescription: 'Search me',
+      description: 'Search description',
+      categoryIds: [testCategoryId],
+    };
+
+    const createRes = await request(app.getHttpServer())
+      .post('/course')
+      .set('Cookie', [`accessToken=${accessToken}`])
+      .send(createDto)
+      .expect(201);
+
+    const searchCourseId = createRes.body.id;
+
+    const searchDto = {
+      q: 'Searchable',
+      page: 1,
+      pageSize: 10,
+    };
+
+    const searchRes = await request(app.getHttpServer())
+      .post('/course/search')
+      .send(searchDto)
+      .expect(201);
+
+    expect(searchRes.body.success).toBe(true);
+    expect(searchRes.body.data.courses).toBeInstanceOf(Array);
+    expect(searchRes.body.data.courses.length).toBeGreaterThan(0);
+    const found = searchRes.body.data.courses.find(
+      (c: any) => c.id === searchCourseId,
+    );
+    expect(found).toBeDefined();
+    expect(found.title).toEqual(createDto.title);
+
+    const noMatchSearchDto = {
+      q: 'NonExistentCourseQueryString',
+    };
+
+    const noMatchRes = await request(app.getHttpServer())
+      .post('/course/search')
+      .send(noMatchSearchDto)
+      .expect(201);
+
+    expect(noMatchRes.body.success).toBe(true);
+    expect(noMatchRes.body.data.courses).toEqual([]);
+    expect(noMatchRes.body.data.pagination.totalItems).toBe(0);
+
+    // Clean up
+    await dataSource.query('DELETE FROM course WHERE id = ?', [searchCourseId]);
   });
 });

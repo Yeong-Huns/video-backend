@@ -7,6 +7,23 @@ GET {{API_URL}}/{{COURSE}}/d635de01-3064-4674-9059-b47763e63545?
     include=sections,lectures,courseCategories,courseEnrollments,courseQuestions,courseReviews
 Content-Type: application/json
 
+### searchCourses
+POST {{API_URL}}/{{COURSE}}/search
+Content-Type: application/json
+
+{
+  "q": "Nest",
+  "category": "cc41c3dc-dca1-4cf4-ab91-684e4ff2ce5a",
+  "priceRange": {
+    "min": 10000,
+    "max": 100000
+  },
+  "sortBy": "price",
+  "order": "desc",
+  "page": 1,
+  "pageSize": 10
+}
+
 
 ### Create
 @개발=cc41c3dc-dca1-4cf4-ab91-684e4ff2ce5a
