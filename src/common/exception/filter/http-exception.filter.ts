@@ -1,11 +1,11 @@
 import {
-  ArgumentsHost,
+  type ArgumentsHost,
   Catch,
-  ExceptionFilter,
+  type ExceptionFilter,
   HttpException,
   Logger,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { formatDate } from '../../utils/format-date.util';
 
 interface ExceptionResponse {
@@ -43,7 +43,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message = '인증 오류가 발생하였습니다.';
     }
 
-    if (status === 500 && message === 'internal server error') {
+    if (status === 500 && message == 'Internal server error') {
       message = '예기치 않은 오류가 발생하였습니다. 관리자에게 문의하세요.';
     }
 

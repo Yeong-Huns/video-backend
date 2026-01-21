@@ -54,3 +54,7 @@ Content-Type: application/json
 ### Delete
 DELETE {{API_URL}}/{{COURSE}}/{{id}}
 Content-Type: application/json
+
+###
+GET {{API_URL}}/debug-sentry
+Content-Type: application/json

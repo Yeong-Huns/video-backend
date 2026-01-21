@@ -8,7 +8,7 @@ import { RoleModule } from './role/role.module';
 import { UserModule } from './user/user.module';
 import { AccountModule } from './account/account.module';
 import { VerificationTokenModule } from './verification-token/verification-token.module';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guard/access-token.guard';
 import { RoleGuard } from './auth/guard/role.guard';
 import { CourseModule } from './course/course.module';
@@ -22,9 +22,12 @@ import { CourseCommentModule } from './course-comment/course-comment.module';
 import { LectureActivityModule } from './lecture-activity/lecture-activity.module';
 import { MediaModule } from './media/media.module';
 import { StorageModule } from './storage/storage.module';
+import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
+import { TestModule } from './sentry/test.module';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
@@ -73,8 +76,13 @@ import { StorageModule } from './storage/storage.module';
     LectureActivityModule,
     MediaModule,
     StorageModule,
+    TestModule,
   ],
   providers: [
+    {
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

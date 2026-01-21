@@ -1,13 +1,15 @@
 import {
-  ArgumentsHost,
+  type ArgumentsHost,
   Catch,
-  ExceptionFilter,
+  type ExceptionFilter,
   HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
 import { formatDate } from '../../utils/format-date.util';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import { SentryExceptionCaptured } from '@sentry/nestjs';
+import { captureException } from '@sentry/nestjs';
 
 interface MysqlError {
   code: string;
@@ -20,7 +22,9 @@ interface MysqlError {
 export class TypeOrmExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger('TypeOrmExceptionFilter');
 
+  @SentryExceptionCaptured()
   catch(exception: QueryFailedError, host: ArgumentsHost) {
+    captureException(exception);
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
