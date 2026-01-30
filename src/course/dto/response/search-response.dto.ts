@@ -18,13 +18,7 @@ export class PaginationDto {
   hasPrev: boolean;
 }
 
-export class CourseResponseDto extends Course {
-  @ApiProperty({ description: '수강생 수' })
-  enrollmentCount: number;
-
-  @ApiProperty({ description: '리뷰 수' })
-  reviewCount: number;
-}
+export class CourseResponseDto extends Course {}
 
 export class SearchCourseDataDto {
   @ApiProperty({

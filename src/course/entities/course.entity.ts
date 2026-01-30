@@ -136,4 +136,10 @@ export class Course extends BaseEntity {
   @ApiProperty({ type: () => [CourseQuestion], description: '강의 질문 목록' })
   @OneToMany(() => CourseQuestion, (courseQuestion) => courseQuestion.course)
   courseQuestions: CourseQuestion[];
+
+  @ApiProperty({ description: '수강생 수', required: false, nullable: true })
+  enrollmentCount?: number;
+
+  @ApiProperty({ description: '리뷰 수', required: false, nullable: true })
+  reviewCount?: number;
 }

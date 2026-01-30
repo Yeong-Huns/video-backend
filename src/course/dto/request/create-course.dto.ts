@@ -7,6 +7,9 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
+import { Course } from '../../entities/course.entity';
+import slug from 'slug';
+import { CourseCategory } from '../../../course-category/entities/course-category.entity';
 
 export class CreateCourseDto {
   @ApiProperty({ description: '코스 제목' })
